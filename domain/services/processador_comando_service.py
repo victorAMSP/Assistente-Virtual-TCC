@@ -2,10 +2,11 @@ import spacy
 import re
 import difflib
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 
 class ProcessadorComandoService:
     def __init__(self):
+        # Carrega spaCy (mantém sua lógica atual)
         try:
             self.nlp = spacy.load("pt_core_news_sm")
         except:
@@ -13,6 +14,32 @@ class ProcessadorComandoService:
             os.system("python -m spacy download pt_core_news_sm")
             self.nlp = spacy.load("pt_core_news_sm")
 
+        # -------- Intents: palavras-chave e regex (ATUALIZADO) --------
+        self.concluir_keywords = [
+            "concluir", "concluí", "conclui", "concluido", "concluído",
+            "finalizar", "finalizei", "finaliza", "terminei", "fiz", "já fiz",
+            "marcar como concluído", "marcar como concluido", "feito"
+        ]
+
+        # Ampliado para cobrir variações de “me lembre depois”
+        self.adiar_keywords = [
+            "adiar", "adiei", "adiar o", "adiar a", "snooze",
+            "lembrar depois", "lembre depois", "lembra depois",
+            "lembre-me depois", "lembra-me depois", "me lembre depois", "me lembra depois",
+            "mais tarde", "postergar", "posterga"
+        ]
+        # Regex robusto para formas “me lembre/lembra/lembre-me/lembra-me depois”
+        self.regex_lembre_depois = re.compile(
+            r"\b(?:me\s+)?lembre(?:-me)?\s+depois\b|\b(?:me\s+)?lembra(?:-me)?\s+depois\b|\blembrar\s+depois\b",
+            re.IGNORECASE
+        )
+
+        # “em 10 min”, “em 15 minutos”
+        self.regex_minutos_adiar = re.compile(r"\bem\s+(\d{1,3})\s*(?:min|minuto|minutos)\b", re.IGNORECASE)
+        # “id 12”, “#12”, “(12)”, ou número solto (evitando horários)
+        self.regex_id = re.compile(r"(?:id\s*|#|\()(\d+)\)?", re.IGNORECASE)
+
+        # -------- (Existentes no seu código) --------
         self.regex_horario = re.compile(r"(\d{1,2})[:h](\d{0,2})")
 
         self.verbos_ignore = {
@@ -52,6 +79,38 @@ class ProcessadorComandoService:
 
         self.habitos_existentes: List[str] = []
 
+    # -------------------- HELPERS --------------------
+    def _contains_any(self, text: str, keywords: List[str]) -> bool:
+        t = text.lower()
+        return any(k in t for k in keywords)
+
+    def _extrair_id(self, texto: str) -> Optional[int]:
+        m = self.regex_id.search(texto)
+        if m:
+            try:
+                return int(m.group(1))
+            except:
+                return None
+        # número solto, evitando padrões de horário
+        m2 = re.search(r"\b(\d+)\b", texto)
+        if m2 and not re.search(r"\d{1,2}[:h]\d{0,2}", texto):
+            try:
+                return int(m2.group(1))
+            except:
+                return None
+        return None
+
+    def _extrair_minutos_adiar(self, texto: str, default_minutos: int = 15) -> int:
+        m = self.regex_minutos_adiar.search(texto)
+        if m:
+            try:
+                val = int(m.group(1))
+                return max(1, min(val, 1440))
+            except:
+                return default_minutos
+        return default_minutos
+
+    # -------------------- EXISTENTES --------------------
     def configurar_habitos_existentes(self, habitos: List[str]):
         self.habitos_existentes = habitos
 
@@ -65,13 +124,13 @@ class ProcessadorComandoService:
         for palavra in palavras:
             if palavra.isdigit() or re.match(r"\d{1,2}[:h]\d{0,2}", palavra):
                 frase_corrigida.append(palavra)
-            elif len(palavra) > 12 and not palavra.lower() in self.palavras_validas:
+            elif len(palavra) > 12 and palavra.lower() not in self.palavras_validas:
                 frase_corrigida.append(palavra)
             else:
                 frase_corrigida.append(self.corrigir_palavra(palavra))
         return " ".join(frase_corrigida)
 
-    def extrair_horario(self, texto: str) -> str:
+    def extrair_horario(self, texto: str) -> Optional[str]:
         texto = texto.lower()
         match = self.regex_horario.search(texto)
         if match:
@@ -117,8 +176,7 @@ class ProcessadorComandoService:
         doc_novo = self.nlp(nova_acao.lower())
         for habito in self.habitos_existentes:
             doc_existente = self.nlp(habito.lower())
-            similaridade = doc_novo.similarity(doc_existente)
-            if similaridade > 0.85:
+            if doc_novo.similarity(doc_existente) > 0.85:
                 return True
         return False
 
@@ -132,20 +190,48 @@ class ProcessadorComandoService:
             and not re.match(r"^\d{1,2}[:h]\d{0,2}$", token.text)
         ]
         if not tokens_filtrados:
-            substantivos_finais = [token.text for token in doc if token.pos_ in ["NOUN", "PROPN"]]
-            acao_bruta = " ".join(substantivos_finais).strip() if substantivos_finais else doc[-1].text
+            subs = [t.text for t in doc if t.pos_ in ["NOUN", "PROPN"]]
+            acao_bruta = " ".join(subs).strip() if subs else doc[-1].text
         else:
             acao_bruta = " ".join(tokens_filtrados).strip()
         acao_corrigida = self.corrigir_frase(acao_bruta)
         acao_limpa = " ".join([p for p in acao_corrigida.split() if p.lower() != "agenda"])
         return acao_limpa
 
-    def processar(self, frase: str) -> List[Dict[str, str]]:
-        frase_corrigida = self.corrigir_frase(frase)
-        if any(comando in frase.lower() for comando in self.comandos_sociais):
-            return [{"acao": "__social__", "horario": "", "categoria": frase}]
-        if any(v in frase.lower() for v in self.frases_vagas):
+    # -------------------- ENTRYPOINT --------------------
+    def processar(self, frase: str) -> List[Dict[str, Any]]:
+        """
+        Retorna uma lista de comandos estruturados.
+        Casos especiais:
+          - __social__: comandos sociais / próximos hábitos
+          - __concluir__: intenção de marcar como concluído (pode conter habito_id)
+          - __adiar__: intenção de adiar (pode conter habito_id e minutos)
+        Caso contrário, retorna hábitos a cadastrar com {acao, horario, categoria}.
+        """
+        frase_original = frase or ""
+        frase_lower = frase_original.lower().strip()
+        frase_corrigida = self.corrigir_frase(frase_original)
+
+        # 1) Comandos sociais
+        if any(c in frase_lower for c in self.comandos_sociais):
+            return [{"acao": "__social__", "horario": "", "categoria": frase_lower}]
+
+        # 2) Frases vagas (não dá para entender)
+        if any(v in frase_lower for v in self.frases_vagas):
             return [{"acao": "", "horario": "", "categoria": ""}]
+
+        # 3) INTENT: CONCLUIR
+        if self._contains_any(frase_lower, self.concluir_keywords):
+            habito_id = self._extrair_id(frase_lower)
+            return [{"acao": "__concluir__", "habito_id": habito_id}]
+
+        # 4) INTENT: ADIAR (snooze)  ← ATUALIZADO (keywords OU regex “me lembre depois”)
+        if self._contains_any(frase_lower, self.adiar_keywords) or self.regex_lembre_depois.search(frase_lower):
+            habito_id = self._extrair_id(frase_lower)  # pode ser None
+            minutos = self._extrair_minutos_adiar(frase_lower, default_minutos=15)
+            return [{"acao": "__adiar__", "habito_id": habito_id, "minutos": minutos}]
+
+        # 5) Cadastro de novos hábitos (múltiplas ações)
         acoes_texto = self.dividir_em_acoes(frase_corrigida)
         resultados = []
         for acao_texto in acoes_texto:
@@ -157,4 +243,5 @@ class ProcessadorComandoService:
             horario = self.extrair_horario(acao_texto) or self.sugerir_horario()
             categoria = self.extrair_categoria(acao)
             resultados.append({"acao": acao.lower(), "horario": horario, "categoria": categoria})
+
         return resultados

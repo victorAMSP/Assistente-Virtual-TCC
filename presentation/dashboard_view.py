@@ -7,6 +7,9 @@ def render_dashboard_view(usuario: str, deps: dict):
     st.title("📊 Dashboard do Usuário")
     st.markdown("Veja seu desempenho com base nos hábitos e conclusões registrados.")
 
+    def has_uc(name: str) -> bool:
+        return isinstance(deps.get(name), object)
+
     st.markdown("### 📅 Calendário de Hábitos")
     data_escolhida = st.date_input("Selecione um dia para visualizar os hábitos:", date.today())
 
@@ -54,7 +57,10 @@ def render_dashboard_view(usuario: str, deps: dict):
                         st.rerun()
                 with col4:
                     if st.button("✅", key=f"concluir_{h.id}", help="Marcar como concluído"):
-                        deps["registrar_conclusao_uc"].executar(usuario, h.acao, h.horario, "sim", h.categoria)
+                        if has_uc("marcar_concluido_uc"):
+                            deps["marcar_concluido_uc"].execute(habito_id=h.id, fonte_acao="calendario")
+                        else:
+                            deps["registrar_conclusao_uc"].executar(usuario, h.acao, h.horario, "sim", h.categoria)
                         st.rerun()
                 with col5:
                     if st.button("❌", key=f"nao_{h.id}", help="Marcar como não realizado"):

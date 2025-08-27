@@ -23,6 +23,7 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
                 conclusao.categoria
             ))
             conn.commit()
+            conclusao.id = cursor.lastrowid  # Atribui o ID gerado a entidade Conclusao
 
     def registrar(self, conclusao: Conclusao) -> None:
         conn = sqlite3.connect(self.db_path)
@@ -38,6 +39,7 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
             conclusao.data_registro.strftime("%Y-%m-%d %H:%M:%S"),
             conclusao.categoria
         ))
+        conclusao.id = cursor.lastrowid
         conn.commit()
         conn.close()
 
@@ -45,7 +47,7 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT usuario, acao, horario, status, data_registro, categoria
+            SELECT id, usuario, acao, horario, status, data_registro, categoria
             FROM conclusoes
             WHERE usuario = ?
         """, (usuario,))
@@ -54,12 +56,13 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
 
         return [
             Conclusao(
-                usuario=r[0],
-                acao=r[1],
-                horario=r[2],
-                status=r[3],
-                data_registro=datetime.strptime(r[4], "%Y-%m-%d %H:%M:%S"),
-                categoria=r[5]
+                id=r[0],
+                usuario=r[1],
+                acao=r[2],
+                horario=r[3],
+                status=r[4],
+                data_registro=datetime.strptime(r[5], "%Y-%m-%d %H:%M:%S"),
+                categoria=r[6]
             ) for r in resultados
         ]
 
@@ -67,7 +70,7 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT usuario, acao, horario, status, data_registro, categoria
+                SELECT id, usuario, acao, horario, status, data_registro, categoria
                 FROM conclusoes
                 WHERE usuario = ?
                 ORDER BY data_registro DESC
@@ -85,7 +88,7 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             query = """
-                SELECT usuario, acao, horario, status, data_registro, categoria
+                SELECT id, usuario, acao, horario, status, data_registro, categoria
                 FROM conclusoes
                 WHERE usuario = ?
             """
@@ -104,11 +107,12 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
             rows = cursor.fetchall()
             return [
                 Conclusao(
-                    usuario=r[0],
-                    acao=r[1],
-                    horario=r[2],
-                    status=r[3],
-                    data_registro=datetime.strptime(r[4], "%Y-%m-%d %H:%M:%S"),
-                    categoria=r[5]
+                    id=r[0],
+                    usuario=r[1],
+                    acao=r[2],
+                    horario=r[3],
+                    status=r[4],
+                    data_registro=datetime.strptime(r[5], "%Y-%m-%d %H:%M:%S"),
+                    categoria=r[6]
                 ) for r in rows
             ]

@@ -1,7 +1,8 @@
 from datetime import datetime
 
 class Conclusao:
-    def __init__(self, usuario, acao, horario, status, data_registro=None, categoria="geral"):
+    def __init__(self, usuario, acao, horario, status, data_registro=None, categoria="geral", id=None):
+        self.id = id                      # ID único da conclusão
         self.usuario = usuario            # Usuário dono da conclusão
         self.acao = acao                  # Ação concluída
         self.horario = horario            # Ex: '14h00'
