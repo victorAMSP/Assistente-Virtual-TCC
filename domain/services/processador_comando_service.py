@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 
 class ProcessadorComandoService:
     def __init__(self):
-        # Carrega spaCy (mantém sua lógica atual)
+        # Carrega spaCy 
         try:
             self.nlp = spacy.load("pt_core_news_sm")
         except:
@@ -39,7 +39,7 @@ class ProcessadorComandoService:
         # “id 12”, “#12”, “(12)”, ou número solto (evitando horários)
         self.regex_id = re.compile(r"(?:id\s*|#|\()(\d+)\)?", re.IGNORECASE)
 
-        # -------- (Existentes no seu código) --------
+       
         self.regex_horario = re.compile(r"(\d{1,2})[:h](\d{0,2})")
 
         self.verbos_ignore = {
@@ -110,7 +110,6 @@ class ProcessadorComandoService:
                 return default_minutos
         return default_minutos
 
-    # -------------------- EXISTENTES --------------------
     def configurar_habitos_existentes(self, habitos: List[str]):
         self.habitos_existentes = habitos
 
@@ -225,7 +224,7 @@ class ProcessadorComandoService:
             habito_id = self._extrair_id(frase_lower)
             return [{"acao": "__concluir__", "habito_id": habito_id}]
 
-        # 4) INTENT: ADIAR (snooze)  ← ATUALIZADO (keywords OU regex “me lembre depois”)
+        # 4) INTENT: ADIAR (snooze) 
         if self._contains_any(frase_lower, self.adiar_keywords) or self.regex_lembre_depois.search(frase_lower):
             habito_id = self._extrair_id(frase_lower)  # pode ser None
             minutos = self._extrair_minutos_adiar(frase_lower, default_minutos=15)
