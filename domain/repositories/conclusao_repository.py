@@ -3,10 +3,10 @@ from typing import List, Optional
 from domain.entities.conclusao import Conclusao
 
 class ConclusaoRepository(ABC):
-    @abstractmethod
-    def salvar(self, conclusao: Conclusao) -> None:
-        """Salva uma nova conclusão no banco de dados."""
-        pass
+    # @abstractmethod
+    # def salvar(self, conclusao: Conclusao) -> None:
+    #     """Salva uma nova conclusão no banco de dados."""
+    #     pass
 
     @abstractmethod
     def registrar(self, conclusao: Conclusao) -> None:

@@ -10,7 +10,7 @@ class AdiarHabitoUseCase:
     """
     def __init__(self, habito_repo, db_path: str = "assistente_virtual.db"):
         self.habito_repo = habito_repo
-        # Mantém compatível com seu projeto atual:contentReference[oaicite:3]{index=3} e o script de criação:contentReference[oaicite:4]{index=4}
+        
         self.db_path = db_path
 
     def _has_col(self, cur, table: str, col: str) -> bool:

@@ -4,13 +4,11 @@ from datetime import datetime, timedelta
 def render_chatbot_view(usuario: str, deps: dict):
     st.title("🤖 Assistente Virtual")
 
-    # ---- Helpers de compatibilidade (não quebram nada) ----
+    # ---- Helpers de compatibilidade ----
     def has_uc(name: str) -> bool:
         return isinstance(deps.get(name), object)
 
     def get_repo_flag(flag: str) -> bool:
-        # (Opcional futuramente) Se expuser o repo em deps["habito_repo"] com flags,
-        # isso liga/desliga partes da UI.
         repo = deps.get("habito_repo")
         return bool(getattr(repo, flag, False)) if repo else False
 
@@ -35,7 +33,7 @@ def render_chatbot_view(usuario: str, deps: dict):
             # Guardar o último hábito notificado (para intents sem ID)
             st.session_state.ultimo_habito_notificado_id = h.id
 
-            chave = f"{h.acao}_{h.horario}"
+            chave = f"{h.acao}_{str(h.horario)}"
             agora = datetime.now()
 
             reagendar_para = st.session_state.lembretes_adiados.get(chave)
@@ -44,7 +42,7 @@ def render_chatbot_view(usuario: str, deps: dict):
 
             if chave not in st.session_state.concluidos_via_lembrete:
                 with st.container():
-                    st.info(f"⏰ {h.acao} às {h.horario} ({h.categoria})", icon="🔔")
+                    st.info(f"⏰ {h.acao} às {str(h.horario)} ({h.categoria})", icon="🔔")
                     col1, col2 = st.columns(2)
                     # Concluir
                     if col1.button(f"✅ Já concluí [{i}]", key=f"concluir_{i}"):
@@ -52,7 +50,7 @@ def render_chatbot_view(usuario: str, deps: dict):
                             deps["marcar_concluido_uc"].execute(habito_id=h.id, fonte_acao="notificacao")
                         else:
                             deps["registrar_conclusao_uc"].executar(
-                                usuario, h.acao, h.horario, "sim", h.categoria
+                                usuario, h.acao, str(h.horario), "sim", h.categoria
                             )
                         st.session_state.concluidos_via_lembrete.add(chave)
                         st.success(f"Hábito '{h.acao}' marcado como concluído!")
@@ -75,11 +73,11 @@ def render_chatbot_view(usuario: str, deps: dict):
             resposta = ""
             comando = user_input.lower()
 
-            # Comandos explícitos que você já suportava
+            # Comandos explícitos 
             if any(cmd in comando for cmd in ["ver hábitos", "listar hábitos", "quais são meus hábitos", "meus hábitos"]):
                 habitos = deps["listar_habitos_uc"].executar(usuario)
                 resposta = "📋 Seus hábitos cadastrados:\n" + "\n".join(
-                    f"• [ID {h.id}] {h.acao} às {h.horario} ({h.categoria})" for h in habitos
+                    f"• [ID {h.id}] {h.acao} às {str(h.horario)} ({h.categoria})" for h in habitos
                 ) if habitos else "⚠️ Nenhum hábito cadastrado."
 
             elif comando.startswith("apagar hábito"):
@@ -100,9 +98,9 @@ def render_chatbot_view(usuario: str, deps: dict):
                             deps["marcar_concluido_uc"].execute(habito_id=selecionado.id, fonte_acao="chatbot")
                         else:
                             deps["registrar_conclusao_uc"].executar(
-                                usuario, selecionado.acao, selecionado.horario, "sim", selecionado.categoria
+                                usuario, selecionado.acao, str(selecionado.horario), "sim", selecionado.categoria
                             )
-                        resposta = f"✅ Hábito '{selecionado.acao}' às {selecionado.horario} marcado como CONCLUÍDO."
+                        resposta = f"✅ Hábito '{selecionado.acao}' às {str(selecionado.horario)} marcado como CONCLUÍDO."
                     else:
                         resposta = f"⚠️ Hábito ID {habito_id} não encontrado."
                 except:
@@ -133,14 +131,14 @@ def render_chatbot_view(usuario: str, deps: dict):
                             todos = deps["listar_habitos_uc"].executar(usuario)
                             futuros = [
                                 h for h in todos
-                                if datetime.strptime(h.horario.replace("h", ":"), "%H:%M").time() > agora.time()
+                                if h.horario.to_time() > agora.time()
                             ]
                             if futuros:
                                 proximo = sorted(
                                     futuros,
-                                    key=lambda x: datetime.strptime(x.horario.replace("h", ":"), "%H:%M")
+                                    key=lambda x: x.horario.to_seconds()
                                 )[0]
-                                resposta += f"📌 Seu próximo hábito é '{proximo.acao}' às {proximo.horario} ({proximo.categoria}).\n"
+                                resposta += f"📌 Seu próximo hábito é '{proximo.acao}' às {str(proximo.horario)} ({proximo.categoria}).\n"
                             else:
                                 resposta += "🎉 Você não tem mais hábitos programados para hoje.\n"
                         else:
@@ -168,9 +166,9 @@ def render_chatbot_view(usuario: str, deps: dict):
                             selecionado = next((h for h in habitos if h.id == alvo_id), None)
                             if selecionado:
                                 deps["registrar_conclusao_uc"].executar(
-                                    usuario, selecionado.acao, selecionado.horario, "sim", selecionado.categoria
+                                    usuario, selecionado.acao, str(selecionado.horario), "sim", selecionado.categoria
                                 )
-                                resposta += f"✅ Hábito '{selecionado.acao}' às {selecionado.horario} marcado como CONCLUÍDO.\n"
+                                resposta += f"✅ Hábito '{selecionado.acao}' às {str(selecionado.horario)} marcado como CONCLUÍDO.\n"
                             else:
                                 resposta += f"⚠️ Hábito ID {alvo_id} não encontrado.\n"
                         continue  # próximo resultado

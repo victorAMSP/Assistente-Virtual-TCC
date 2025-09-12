@@ -1,7 +1,5 @@
 from application.use_cases.buscar_habitos_proximos_usecase import BuscarHabitosProximosUseCase
 from plyer import notification
-from datetime import datetime
-
 
 class NotificacaoService:
     def __init__(self, buscar_habitos_uc: BuscarHabitosProximosUseCase):
@@ -12,12 +10,13 @@ class NotificacaoService:
         habitos = self.buscar_habitos_uc.executar(usuario)
 
         for h in habitos:
-            chave = f"{h.acao}_{h.horario}"
+            horario_str = str(h.horario)
+            chave = f"{h.acao}_{horario_str}"
             if chave in self.notificados:
                 continue
 
             titulo = f"Lembrete: {h.acao}"
-            mensagem = f"Está na hora de '{h.acao}' às {h.horario} ({h.categoria})"
+            mensagem = f"Está na hora de '{h.acao}' às {horario_str} ({h.categoria})"
             self._notificar(titulo, mensagem)
             self.notificados.add(chave)
 

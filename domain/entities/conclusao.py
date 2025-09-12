@@ -1,7 +1,9 @@
 from datetime import datetime
+from domain.value_objects.horario_do_habito import HorarioDoHabito
+
 
 class Conclusao:
-    def __init__(self, usuario, acao, horario, status, data_registro=None, categoria="geral", id=None):
+    def __init__(self, usuario, acao, horario: HorarioDoHabito, status, data_registro=None, categoria="geral", id=None):
         self.id = id                      # ID único da conclusão
         self.usuario = usuario            # Usuário dono da conclusão
         self.acao = acao                  # Ação concluída

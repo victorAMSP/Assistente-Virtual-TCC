@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from domain.entities.habito import Habito
 from domain.repositories.habito_repository import IHabitorepository
 from typing import List
+from domain.value_objects.horario_do_habito import HorarioDoHabito
 
 DB_NAME = "assistente_virtual.db"
 
@@ -19,7 +20,7 @@ class HabitoRepositorySQLite(IHabitorepository):
         cursor.execute("""
             INSERT INTO habitos (usuario, acao, horario, categoria)
             VALUES (?, ?, ?, ?)
-        """, (habito.usuario, habito.acao, habito.horario, habito.categoria))
+        """, (habito.usuario, habito.acao, habito.horario.to_db(), habito.categoria))
         conn.commit()
         conn.close()
 
@@ -27,9 +28,24 @@ class HabitoRepositorySQLite(IHabitorepository):
         conn = self.conectar()
         cursor = conn.cursor()
         cursor.execute("SELECT id, acao, horario, categoria FROM habitos WHERE usuario = ?", (usuario,))
-        dados = cursor.fetchall()
+        rows = cursor.fetchall()
         conn.close()
-        return [Habito(usuario, a, h, c, id=h_id) for h_id, a, h, c in dados]
+
+        habitos: List[Habito] = []
+        for h_id, acao, horario_txt, categoria in rows:
+            habitos.append(
+                Habito(
+                    id=h_id,
+                    usuario=usuario,
+                    acao=acao,
+                    horario=HorarioDoHabito.from_db(horario_txt),  # <-- DB -> VO
+                    categoria=categoria,
+                )
+            )
+        return habitos
+        # dados = cursor.fetchall()
+        # conn.close()
+        # return [Habito(usuario, a, h, c, id=h_id) for h_id, a, h, c in dados]
 
     def listar_com_id(self, usuario: str):
         return self.listar_por_usuario(usuario)
@@ -48,7 +64,7 @@ class HabitoRepositorySQLite(IHabitorepository):
             UPDATE habitos
             SET acao = ?, horario = ?, categoria = ?
             WHERE id = ?
-        """, (habito.acao, habito.horario, habito.categoria, habito.id))
+        """, (habito.acao, habito.horario.to_db(), habito.categoria, habito.id))
         conn.commit()
         conn.close()
 
@@ -64,7 +80,18 @@ class HabitoRepositorySQLite(IHabitorepository):
             WHERE usuario = ? AND horario IN ({placeholder})
         """
         cursor.execute(query, (usuario, *horarios_alvo))
-        dados = cursor.fetchall()
+        rows = cursor.fetchall()
         conn.close()
 
-        return [Habito(id=d[0], usuario=d[1], acao=d[2], horario=d[3], categoria=d[4]) for d in dados]
+        proximos: List[Habito] = []
+        for h_id, usr, acao, horario_txt, categoria in rows:
+            proximos.append(
+                Habito(
+                    id=h_id,
+                    usuario=usr,
+                    acao=acao,
+                    horario=HorarioDoHabito.from_db(horario_txt), 
+                    categoria=categoria,
+                )
+            )
+        return proximos

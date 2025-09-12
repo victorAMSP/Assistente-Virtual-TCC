@@ -24,19 +24,19 @@ def render_dashboard_view(usuario: str, deps: dict):
     else:
         for h in todos_habitos:
             status = "⏳ Pendente"
-            encontrado = next((c for c in habitos_concluidos if c.acao == h.acao and c.horario == h.horario), None)
+            encontrado = next((c for c in habitos_concluidos if c.acao == h.acao and str(c.horario) == str(h.horario)), None)
             if encontrado:
                 status = "✅ Concluído" if encontrado.status == "sim" else "❌ Não realizado"
 
             if f"editar_{h.id}" in st.session_state and st.session_state[f"editar_{h.id}"]:
                 with st.form(f"form_editar_{h.id}"):
                     nova_acao = st.text_input("Ação:", value=h.acao, key=f"acao_{h.id}")
-                    novo_horario = st.text_input("Horário (ex: 14h00):", value=h.horario, key=f"horario_{h.id}")
+                    novo_horario = st.text_input("Horário (ex: 14h00):", value=str(h.horario), key=f"horario_{h.id}")
                     nova_categoria = st.text_input("Categoria:", value=h.categoria, key=f"categoria_{h.id}")
                     colf1, colf2 = st.columns([1, 1])
                     with colf1:
                         if st.form_submit_button("💾 Salvar"):
-                            deps["atualizar_habito_uc"].executar(h.id, nova_acao, novo_horario, nova_categoria)
+                            deps["atualizar_habito_uc"].executar(h.id, usuario,nova_acao, novo_horario, nova_categoria)
                             st.session_state[f"editar_{h.id}"] = False
                             st.rerun()
                     with colf2:
@@ -46,7 +46,7 @@ def render_dashboard_view(usuario: str, deps: dict):
             else:
                 col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
                 with col1:
-                    st.markdown(f"• **{h.acao}** às {h.horario} — {status} ({h.categoria})")
+                    st.markdown(f"• **{h.acao}** às {str(h.horario)} — {status} ({h.categoria})")
                 with col2:
                     if st.button("📝", key=f"btn_editar_{h.id}", help="Editar"):
                         st.session_state[f"editar_{h.id}"] = True
@@ -60,11 +60,11 @@ def render_dashboard_view(usuario: str, deps: dict):
                         if has_uc("marcar_concluido_uc"):
                             deps["marcar_concluido_uc"].execute(habito_id=h.id, fonte_acao="calendario")
                         else:
-                            deps["registrar_conclusao_uc"].executar(usuario, h.acao, h.horario, "sim", h.categoria)
+                            deps["registrar_conclusao_uc"].executar(usuario, h.acao, str(h.horario), "sim", h.categoria)
                         st.rerun()
                 with col5:
                     if st.button("❌", key=f"nao_{h.id}", help="Marcar como não realizado"):
-                        deps["registrar_conclusao_uc"].executar(usuario, h.acao, h.horario, "não", h.categoria)
+                        deps["registrar_conclusao_uc"].executar(usuario, h.acao, str(h.horario), "não", h.categoria)
                         st.rerun()
 
     st.markdown("---")
@@ -138,7 +138,7 @@ def render_dashboard_view(usuario: str, deps: dict):
 
         st.markdown("---")
         st.markdown("### 🕒 Distribuição por Horário")
-        horarios = [r.horario for r in resultados]
+        horarios = [str(r.horario) for r in resultados]
         horario_count = Counter(horarios)
         horario_sorted = dict(sorted(horario_count.items()))
 
