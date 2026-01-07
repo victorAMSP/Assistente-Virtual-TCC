@@ -6,11 +6,7 @@ def render_chatbot_view(usuario: str, deps: dict):
 
     # ---- Helpers de compatibilidade ----
     def has_uc(name: str) -> bool:
-        return isinstance(deps.get(name), object)
-
-    def get_repo_flag(flag: str) -> bool:
-        repo = deps.get("habito_repo")
-        return bool(getattr(repo, flag, False)) if repo else False
+        return deps.get(name) is not None
 
     # ---- Estados de sessão ----
     if "chat_history" not in st.session_state:
