@@ -14,7 +14,7 @@ class ProcessadorComandoService:
             os.system("python -m spacy download pt_core_news_sm")
             self.nlp = spacy.load("pt_core_news_sm")
 
-        # -------- Intents: palavras-chave e regex (ATUALIZADO) --------
+        # -------- Intents: palavras-chave e regex --------
         self.concluir_keywords = [
             "concluir", "concluí", "conclui", "concluido", "concluído",
             "finalizar", "finalizei", "finaliza", "terminei", "fiz", "já fiz",
