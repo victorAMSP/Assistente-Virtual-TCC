@@ -53,8 +53,8 @@ class MarcarConcluidoUseCase:
 
             con.commit()
 
-            # Sempre registra conclusão (mantém compatível com sua lógica de hoje)
-            # RegistrarConclusaoUseCase espera: (usuario, acao, horario, status, categoria) conforme seu fluxo atual
+            # Sempre registra conclusão (mantém compatível com a lógica de hoje)
+            # RegistrarConclusaoUseCase espera: (usuario, acao, horario, status, categoria) conforme o fluxo atual
             self.registrar_conclusao_uc.executar(
                 h["usuario"],
                 h["acao"],

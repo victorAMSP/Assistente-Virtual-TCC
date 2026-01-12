@@ -6,17 +6,21 @@ class RegistrarHabitoUseCase:
     def __init__(self, habito_repo: IHabitorepository):
         self.habito_repo = habito_repo
 
-    def executar(self, usuario: str, acao: str, horario: str, categoria: str):
-        """
-        Orquestra o processo de criação de um novo hábito no sistema.
-        """
-        horario_vo = HorarioDoHabito.from_string(horario)  # Converte string para VO
+    def executar(self, usuario: str, acao: str, horario: str, categoria: str = "geral"):
+        # 1) Converte string -> Value Object (valida horário)
+        horario_vo = HorarioDoHabito.from_string(horario)
 
-        # Cria uma instância da entidade
+        # 2) Verifica se já existe o mesmo hábito (usuario + acao + horario)
+        habitos_existentes = self.habito_repo.listar_por_usuario(usuario)
+
+        for h in habitos_existentes:
+            mesmo_horario = (h.horario == horario_vo)
+
+            if h.acao == acao and mesmo_horario:
+                # Já existe: retorna o hábito existente (não cria duplicado)
+                return h
+
+        # 3) Se não existe, cria e salva
         novo_habito = Habito(usuario=usuario, acao=acao, horario=horario_vo, categoria=categoria)
-
-        # Chama o repositório para persistir
         self.habito_repo.salvar(novo_habito)
-
-        # Retorna o hábito registrado (pode ser útil para logs ou testes)
         return novo_habito
