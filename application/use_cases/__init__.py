@@ -1,5 +1,5 @@
 from .registrar_habito_usecase import RegistrarHabitoUseCase
-from .listar_habitos_usecase import ListarHabitosComIdUseCase
+from .listar_habitos_usecase import ListarHabitosPorUsuarioUseCase
 from .apagar_habito_por_id import ApagarHabitoPorIdUseCase
 from .atualizar_habito_usecase import AtualizarHabitoUseCase
 from .registrar_conclusao import RegistrarConclusaoUseCase

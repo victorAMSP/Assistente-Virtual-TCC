@@ -2,8 +2,8 @@ from infrastructure.repositories.habito_repository_sqlite import HabitoRepositor
 from infrastructure.repositories.conclusao_repository_sqlite import ConclusaoRepositorySQLite
 from application.use_cases import (
     RegistrarHabitoUseCase,
-    ListarHabitosComIdUseCase,
     ApagarHabitoPorIdUseCase,
+    ListarHabitosPorUsuarioUseCase,
     AtualizarHabitoUseCase,
     RegistrarConclusaoUseCase,
     ListarConclusoesUseCase,
@@ -21,7 +21,7 @@ def configurar_dependencias():
     conclusao_repo = ConclusaoRepositorySQLite()
 
     registrar_habito_uc = RegistrarHabitoUseCase(habito_repo)
-    listar_habitos_uc = ListarHabitosComIdUseCase(habito_repo)
+    listar_habitos_uc = ListarHabitosPorUsuarioUseCase(habito_repo)
     apagar_habito_uc = ApagarHabitoPorIdUseCase(habito_repo)
     atualizar_habito_uc = AtualizarHabitoUseCase(habito_repo)
     registrar_conclusao_uc = RegistrarConclusaoUseCase(conclusao_repo)

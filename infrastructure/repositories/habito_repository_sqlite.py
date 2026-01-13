@@ -47,8 +47,24 @@ class HabitoRepositorySQLite(IHabitorepository):
         # conn.close()
         # return [Habito(usuario, a, h, c, id=h_id) for h_id, a, h, c in dados]
 
-    def listar_com_id(self, usuario: str):
-        return self.listar_por_usuario(usuario)
+    def buscar_por_id(self, habito_id: int) -> Habito | None:
+        conn = self.conectar()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, usuario, acao, horario, categoria FROM habitos WHERE id = ?", (habito_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return None
+
+        h_id, usr, acao, horario_txt, categoria = row
+        return Habito(
+            id=h_id,
+            usuario=usr,
+            acao=acao,
+            horario=HorarioDoHabito.from_db(horario_txt),
+            categoria=categoria,
+        )
 
     def apagar_por_id(self, id: int):
         conn = self.conectar()

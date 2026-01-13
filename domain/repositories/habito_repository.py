@@ -12,7 +12,7 @@ class IHabitorepository(ABC):
         pass
 
     @abstractmethod
-    def listar_com_id(self, usuario: str) -> List[Habito]:
+    def buscar_por_id(self, habito_id: int) -> Habito | None:
         pass
 
     @abstractmethod
