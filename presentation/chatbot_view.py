@@ -32,8 +32,12 @@ def render_chatbot_view(usuario: str, deps: dict):
             chave = f"{h.acao}_{str(h.horario)}"
             agora = datetime.now()
 
-            reagendar_para = st.session_state.lembretes_adiados.get(chave)
-            if reagendar_para and agora < reagendar_para:
+            # reagendar_para = st.session_state.lembretes_adiados.get(chave)
+            # if reagendar_para and agora < reagendar_para:
+            #     continue
+
+            snooze_ate = deps["notificador"].get_snooze_until(chave) if "notificador" in deps else None
+            if snooze_ate and agora < snooze_ate:
                 continue
 
             if chave not in st.session_state.concluidos_via_lembrete:
@@ -48,17 +52,28 @@ def render_chatbot_view(usuario: str, deps: dict):
                             deps["registrar_conclusao_uc"].executar(
                                 usuario, h.acao, str(h.horario), "sim", h.categoria
                             )
+
                         st.session_state.concluidos_via_lembrete.add(chave)
+
+                        if "notificador" in deps:
+                          deps["notificador"].consumir(chave)
+
                         st.success(f"Hábito '{h.acao}' marcado como concluído!")
 
                     # Adiar (snooze)
                     if col2.button(f"🕓 Me lembre depois [{i}]", key=f"adiar_{i}"):
-                        if has_uc("adiar_habito_uc"):
-                            deps["adiar_habito_uc"].execute(habito_id=h.id, minutos=15)
-                            st.info("⏳ Lembrete adiado por 15 minutos (salvo no banco).")
-                        else:
-                            st.session_state.lembretes_adiados[chave] = agora + timedelta(minutes=15)
+                        # if has_uc("adiar_habito_uc"):
+                        #     deps["adiar_habito_uc"].execute(habito_id=h.id, minutos=15)
+                        #     st.info("⏳ Lembrete adiado por 15 minutos (salvo no banco).")
+                        if has_uc("adiar_lembrete_uc"):
+                            deps["adiar_lembrete_uc"].execute(chave=chave, minutos=15)
                             st.info("⏳ Lembrete adiado por 15 minutos.")
+                        else:
+                            if "notificador" in deps:
+                                deps["notificador"].adiar(chave, minutos=15)
+                                st.info("⏳ Lembrete adiado por 15 minutos.")                            
+                            # st.session_state.lembretes_adiados[chave] = agora + timedelta(minutes=15)
+                            # st.info("⏳ Lembrete adiado por 15 minutos.")
 
     st.markdown("---")
     st.markdown("### 💬 Chat com a Assistente")
@@ -157,7 +172,7 @@ def render_chatbot_view(usuario: str, deps: dict):
                             else:
                                 resposta += f"⚠️ Não consegui concluir o hábito ID {alvo_id}.\n"
                         else:
-                            # Fallback: localizar hábito e registrar conclusão (como antes)
+                            # Fallback: localizar hábito e registrar conclusão 
                             habitos = deps["listar_habitos_uc"].executar(usuario)
                             selecionado = next((h for h in habitos if h.id == alvo_id), None)
                             if selecionado:
@@ -179,24 +194,27 @@ def render_chatbot_view(usuario: str, deps: dict):
                             resposta += "ℹ️ Diga o ID do hábito para adiar. Ex.: `adiar 5 em 15 min`.\n"
                             continue
 
-                        if has_uc("adiar_habito_uc"):
-                            ok = deps["adiar_habito_uc"].execute(habito_id=alvo_id, minutos=int(minutos))
+                        if has_uc("adiar_lembrete_uc"):
+                            ok = deps["adiar_lembrete_uc"].execute(chave=chave, minutos=int(minutos))
                             if ok:
                                 resposta += f"🕓 Lembrete do hábito ID {alvo_id} adiado por {minutos} min.\n"
                             else:
                                 resposta += "⚠️ Função de adiar indisponível no momento.\n"
                         else:
-                            # Fallback: adiar em memória (como no card)
-                            # Para manter aderência ao fluxo de cards, precisamos da "chave".
-                            # Tentativa simples: localizar o hábito e montar a chave  (acao_horario)
-                            habitos = deps["listar_habitos_uc"].executar(usuario)
-                            alvo = next((h for h in habitos if h.id == alvo_id), None)
-                            if alvo:
-                                key = f"{alvo.acao}_{alvo.horario}"
-                                st.session_state.lembretes_adiados[key] = datetime.now() + timedelta(minutes=int(minutos))
-                                resposta += f"🕓 Lembrete do hábito '{alvo.acao}' adiado {minutos} min (apenas nesta sessão).\n"
+                            if "notificador" in deps:
+                                deps["notificador"].adiar(chave, minutos=minutos)
+                                resposta += f"🕓 Lembrete do hábito ID {alvo_id} adiado por {minutos} min.\n"
                             else:
-                                resposta += f"⚠️ Hábito ID {alvo_id} não encontrado.\n"
+                                resposta += "⚠️ Função de adiar indisponível no momento.\n"
+                        # else:
+                        #     habitos = deps["listar_habitos_uc"].executar(usuario)
+                        #     alvo = next((h for h in habitos if h.id == alvo_id), None)
+                        #     if alvo:
+                        #         key = f"{alvo.acao}_{alvo.horario}"
+                        #         st.session_state.lembretes_adiados[key] = datetime.now() + timedelta(minutes=int(minutos))
+                        #         resposta += f"🕓 Lembrete do hábito '{alvo.acao}' adiado {minutos} min (apenas nesta sessão).\n"
+                        #     else:
+                        #         resposta += f"⚠️ Hábito ID {alvo_id} não encontrado.\n"
                         continue  # próximo resultado
 
                     # Cadastro de novos hábitos

@@ -10,7 +10,7 @@ from application.use_cases import (
     BuscarHabitosProximosUseCase,
     GerarRelatorioPDFUseCase,
 )
-from application.use_cases.adiar_habito_use_case import AdiarHabitoUseCase
+from application.use_cases.adiar_lembrete_use_case import AdiarLembreteUseCase
 from application.use_cases.marcar_concluido_use_case import MarcarConcluidoUseCase
 from domain.services.processador_comando_service import ProcessadorComandoService
 from infrastructure.services.notificacao_service import NotificacaoService
@@ -28,11 +28,12 @@ def configurar_dependencias():
     listar_conclusoes_uc = ListarConclusoesUseCase(conclusao_repo)
     buscar_proximos_uc = BuscarHabitosProximosUseCase(habito_repo)
     gerar_relatorio_uc = GerarRelatorioPDFUseCase(conclusao_repo)
-    adiar_habito_uc = AdiarHabitoUseCase(habito_repo)
     marcar_concluido_uc = MarcarConcluidoUseCase(habito_repo, registrar_conclusao_uc)
 
     processador = ProcessadorComandoService()
     notificador = NotificacaoService(buscar_proximos_uc)
+
+    adiar_lembrete_uc = AdiarLembreteUseCase(notificador)
 
     return {
         "registrar_habito_uc": registrar_habito_uc,
@@ -45,6 +46,6 @@ def configurar_dependencias():
         "gerar_relatorio_uc": gerar_relatorio_uc,
         "processador": processador,
         "notificador": notificador,
-        "adiar_habito_uc": adiar_habito_uc,
+        "adiar_lembrete_uc": adiar_lembrete_uc,
         "marcar_concluido_uc": marcar_concluido_uc,
     }
