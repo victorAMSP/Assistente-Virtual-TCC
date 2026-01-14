@@ -1,4 +1,5 @@
 from domain.value_objects.horario_do_habito import HorarioDoHabito
+from domain.value_objects.categoria_do_habito import CategoriaDoHabito
 
 class Habito:
     def __init__(
@@ -6,7 +7,7 @@ class Habito:
             usuario: str, 
             acao: str, 
             horario: HorarioDoHabito, 
-            categoria: str = "geral", 
+            categoria: CategoriaDoHabito, 
             id: int = None):
         
         if not usuario or not usuario.strip():
@@ -18,13 +19,14 @@ class Habito:
         if not isinstance(horario, HorarioDoHabito):
             raise TypeError("Horário deve ser um HorarioDoHabito")
         
-        categoria_normalizada = categoria.strip().lower() if categoria and categoria.strip() else "geral"
+        if not isinstance(categoria, CategoriaDoHabito):
+            raise TypeError("Categoria deve ser uma CategoriaDoHabito")
 
         self.id = id                                # Identificador único no banco
         self.usuario = usuario.strip()              # Usuário ao qual o hábito pertence
         self.acao = acao.strip().lower()            # Ex: 'beber água'
         self.horario = horario                      # Ex: '14h00'
-        self.categoria = categoria_normalizada      # Ex: 'hidratação'
+        self.categoria = categoria      # Ex: 'hidratação'
 
     def __str__(self):
         return f"{self.acao} às {self.horario} ({self.categoria})"

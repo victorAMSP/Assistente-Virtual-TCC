@@ -109,6 +109,6 @@ class ConclusaoRepositorySQLite(ConclusaoRepository):
                 horario=HorarioDoHabito.from_db(r[3]),
                 status=r[4],
                 data_registro=self._parse_dt(r[5]),
-                categoria=r[6]
+                categoria=r[6],
             ) for r in rows
         ]

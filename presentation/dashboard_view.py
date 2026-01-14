@@ -8,7 +8,7 @@ def render_dashboard_view(usuario: str, deps: dict):
     st.markdown("Veja seu desempenho com base nos hábitos e conclusões registrados.")
 
     def has_uc(name: str) -> bool:
-        return isinstance(deps.get(name), object)
+        return deps.get(name) is not None
 
     st.markdown("### 📅 Calendário de Hábitos")
     data_escolhida = st.date_input("Selecione um dia para visualizar os hábitos:", date.today())
@@ -32,7 +32,7 @@ def render_dashboard_view(usuario: str, deps: dict):
                 with st.form(f"form_editar_{h.id}"):
                     nova_acao = st.text_input("Ação:", value=h.acao, key=f"acao_{h.id}")
                     novo_horario = st.text_input("Horário (ex: 14h00):", value=str(h.horario), key=f"horario_{h.id}")
-                    nova_categoria = st.text_input("Categoria:", value=h.categoria, key=f"categoria_{h.id}")
+                    nova_categoria = st.text_input("Categoria:", value=str(h.categoria), key=f"categoria_{h.id}")
                     colf1, colf2 = st.columns([1, 1])
                     with colf1:
                         if st.form_submit_button("💾 Salvar"):
@@ -46,7 +46,7 @@ def render_dashboard_view(usuario: str, deps: dict):
             else:
                 col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
                 with col1:
-                    st.markdown(f"• **{h.acao}** às {str(h.horario)} — {status} ({h.categoria})")
+                    st.markdown(f"• **{h.acao}** às {str(h.horario)} — {status} ({str(h.categoria)})")
                 with col2:
                     if st.button("📝", key=f"btn_editar_{h.id}", help="Editar"):
                         st.session_state[f"editar_{h.id}"] = True
@@ -60,11 +60,11 @@ def render_dashboard_view(usuario: str, deps: dict):
                         if has_uc("marcar_concluido_uc"):
                             deps["marcar_concluido_uc"].execute(habito_id=h.id, fonte_acao="calendario")
                         else:
-                            deps["registrar_conclusao_uc"].executar(usuario, h.acao, str(h.horario), "sim", h.categoria)
+                            deps["registrar_conclusao_uc"].executar(usuario, h.acao, str(h.horario), "sim", str(h.categoria))
                         st.rerun()
                 with col5:
                     if st.button("❌", key=f"nao_{h.id}", help="Marcar como não realizado"):
-                        deps["registrar_conclusao_uc"].executar(usuario, h.acao, str(h.horario), "não", h.categoria)
+                        deps["registrar_conclusao_uc"].executar(usuario, h.acao, str(h.horario), "não", str(h.categoria))
                         st.rerun()
 
     st.markdown("---")
@@ -160,5 +160,6 @@ def render_dashboard_view(usuario: str, deps: dict):
             ax3.set_ylabel("Quantidade")
             ax3.set_title("Distribuição por Categoria")
             st.pyplot(fig3)
+
     else:
         st.warning("Nenhum dado disponível com os filtros aplicados.")

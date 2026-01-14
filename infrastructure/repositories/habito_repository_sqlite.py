@@ -4,6 +4,7 @@ from domain.entities.habito import Habito
 from domain.repositories.habito_repository import IHabitorepository
 from typing import List
 from domain.value_objects.horario_do_habito import HorarioDoHabito
+from domain.value_objects.categoria_do_habito import CategoriaDoHabito
 
 DB_NAME = "assistente_virtual.db"
 
@@ -20,7 +21,7 @@ class HabitoRepositorySQLite(IHabitorepository):
         cursor.execute("""
             INSERT INTO habitos (usuario, acao, horario, categoria)
             VALUES (?, ?, ?, ?)
-        """, (habito.usuario, habito.acao, habito.horario.to_db(), habito.categoria))
+        """, (habito.usuario, habito.acao, habito.horario.to_db(), habito.categoria.to_db()))
         conn.commit()
         conn.close()
 
@@ -38,14 +39,11 @@ class HabitoRepositorySQLite(IHabitorepository):
                     id=h_id,
                     usuario=usuario,
                     acao=acao,
-                    horario=HorarioDoHabito.from_db(horario_txt),  # <-- DB -> VO
-                    categoria=categoria,
+                    horario=HorarioDoHabito.from_db(horario_txt),  
+                    categoria=CategoriaDoHabito.from_db(categoria),
                 )
             )
         return habitos
-        # dados = cursor.fetchall()
-        # conn.close()
-        # return [Habito(usuario, a, h, c, id=h_id) for h_id, a, h, c in dados]
 
     def buscar_por_id(self, habito_id: int) -> Habito | None:
         conn = self.conectar()
@@ -63,7 +61,7 @@ class HabitoRepositorySQLite(IHabitorepository):
             usuario=usr,
             acao=acao,
             horario=HorarioDoHabito.from_db(horario_txt),
-            categoria=categoria,
+            categoria=CategoriaDoHabito.from_db(categoria),
         )
 
     def apagar_por_id(self, id: int):
@@ -80,7 +78,7 @@ class HabitoRepositorySQLite(IHabitorepository):
             UPDATE habitos
             SET acao = ?, horario = ?, categoria = ?
             WHERE id = ?
-        """, (habito.acao, habito.horario.to_db(), habito.categoria, habito.id))
+        """, (habito.acao, habito.horario.to_db(), habito.categoria.to_db(), habito.id))
         conn.commit()
         conn.close()
 
@@ -107,7 +105,7 @@ class HabitoRepositorySQLite(IHabitorepository):
                     usuario=usr,
                     acao=acao,
                     horario=HorarioDoHabito.from_db(horario_txt), 
-                    categoria=categoria,
+                    categoria=CategoriaDoHabito.from_db(categoria),
                 )
             )
         return proximos
