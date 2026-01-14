@@ -88,7 +88,7 @@ class HabitoRepositorySQLite(IHabitorepository):
         agora = datetime.now()
         horarios_alvo = [(agora + timedelta(minutes=i)).strftime("%Hh%M") for i in range(-tolerancia_min, tolerancia_min + 1)]
 
-        conn = sqlite3.connect(self.db_path)
+        conn = self.conectar()
         cursor = conn.cursor()
         placeholder = ",".join("?" for _ in horarios_alvo)
         query = f"""

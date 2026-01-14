@@ -194,6 +194,19 @@ def render_chatbot_view(usuario: str, deps: dict):
                             resposta += "ℹ️ Diga o ID do hábito para adiar. Ex.: `adiar 5 em 15 min`.\n"
                             continue
 
+                        if not has_uc("listar_habitos_uc"):
+                            resposta += "⚠️ Não foi possível listar hábitos para identificar qual lembrete adiar.\n"
+                            continue
+
+                        habitos = deps["listar_habitos_uc"].executar(usuario)
+                        alvo = next((h for h in habitos if h.id == alvo_id), None)
+
+                        if not alvo:
+                            resposta += f"⚠️ Hábito ID {alvo_id} não encontrado.\n"
+                            continue
+
+                        chave = f"{alvo.acao}_{str(alvo.horario)}"
+
                         if has_uc("adiar_lembrete_uc"):
                             ok = deps["adiar_lembrete_uc"].execute(chave=chave, minutos=int(minutos))
                             if ok:
@@ -206,15 +219,6 @@ def render_chatbot_view(usuario: str, deps: dict):
                                 resposta += f"🕓 Lembrete do hábito ID {alvo_id} adiado por {minutos} min.\n"
                             else:
                                 resposta += "⚠️ Função de adiar indisponível no momento.\n"
-                        # else:
-                        #     habitos = deps["listar_habitos_uc"].executar(usuario)
-                        #     alvo = next((h for h in habitos if h.id == alvo_id), None)
-                        #     if alvo:
-                        #         key = f"{alvo.acao}_{alvo.horario}"
-                        #         st.session_state.lembretes_adiados[key] = datetime.now() + timedelta(minutes=int(minutos))
-                        #         resposta += f"🕓 Lembrete do hábito '{alvo.acao}' adiado {minutos} min (apenas nesta sessão).\n"
-                        #     else:
-                        #         resposta += f"⚠️ Hábito ID {alvo_id} não encontrado.\n"
                         continue  # próximo resultado
 
                     # Cadastro de novos hábitos
